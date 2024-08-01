@@ -30,7 +30,7 @@ public class TestTeleop extends LinearOpMode {
         // See the note about this earlier on this page.
         frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        pitchRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        pitchRight.setDirection(DcMotorSimple.Direction.FORWARD);
         double pitchTarget = 0;
         waitForStart();
         if (isStopRequested()) return;
@@ -47,14 +47,18 @@ public class TestTeleop extends LinearOpMode {
             double frontRightPower = (y - x - rx) / denominator;
             double backRightPower = (y + x - rx) / denominator;
             double pitchPosition = pitchRight.getCurrentPosition();
-            double pTerm = 0.01;
+            double kP = 0;
+            //gravity feedforward?
+            double angleFromTicks = ((-360 * pitchPosition)/751.8);
+            double kG = 0.5;
+            double G = kG * Math.cos(Math.toRadians(angleFromTicks + 130));
             if (gamepad2.dpad_up){
-                pitchTarget = 70;
+                pitchTarget = 40;
             }
             if (gamepad2.dpad_down){
-                pitchTarget = 120;
+                pitchTarget = 160;
             }
-            double pitchPower = pTerm * (pitchTarget - pitchPosition);
+            double pitchPower = (kP * (pitchTarget - pitchPosition)) + G;
             pitchLeft.setPower(pitchPower);
             pitchRight.setPower(pitchPower);
             wrist.setPosition(0.4);
