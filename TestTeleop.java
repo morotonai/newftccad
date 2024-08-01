@@ -21,6 +21,9 @@ public class TestTeleop extends LinearOpMode {
         DcMotor pitchRight = hardwareMap.dcMotor.get("pitchRight");
         wrist = hardwareMap.get(Servo.class, "wrist");
         leftClaw = hardwareMap.get(Servo.class, "leftClaw");
+        pitchRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); // Reset the motor encoder
+        pitchRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        pitchLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         // Reverse the right side motors. This may be wrong for your setup.
         // If your robot moves backwards when commanded to go forwards,
         // reverse the left side instead.
@@ -44,12 +47,12 @@ public class TestTeleop extends LinearOpMode {
             double frontRightPower = (y - x - rx) / denominator;
             double backRightPower = (y + x - rx) / denominator;
             double pitchPosition = pitchRight.getCurrentPosition();
-            double pTerm = 0.005;
+            double pTerm = 0.01;
             if (gamepad2.dpad_up){
-                pitchTarget = 240;
+                pitchTarget = 70;
             }
             if (gamepad2.dpad_down){
-                pitchTarget = 10;
+                pitchTarget = 120;
             }
             double pitchPower = pTerm * (pitchTarget - pitchPosition);
             pitchLeft.setPower(pitchPower);
@@ -65,6 +68,9 @@ public class TestTeleop extends LinearOpMode {
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
             extension.setPower(gamepad2.left_stick_y-0.2);
-        }
+            telemetry.addData("target", pitchTarget);
+            telemetry.addData("currentPos",pitchRight.getCurrentPosition());
+            telemetry.update();
+            }
     }
 }
