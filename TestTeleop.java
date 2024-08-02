@@ -4,10 +4,12 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+
 @TeleOp
 public class TestTeleop extends LinearOpMode {
     private Servo wrist;
     private Servo leftClaw;
+    private Servo rightClaw;
     @Override
     public void runOpMode() throws InterruptedException {
         // Declare our motors
@@ -21,16 +23,21 @@ public class TestTeleop extends LinearOpMode {
         DcMotor pitchRight = hardwareMap.dcMotor.get("pitchRight");
         wrist = hardwareMap.get(Servo.class, "wrist");
         leftClaw = hardwareMap.get(Servo.class, "leftClaw");
+        rightClaw = hardwareMap.get(Servo.class, "rightClaw");
+        
         pitchRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); // Reset the motor encoder
         pitchRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         pitchLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        
         // Reverse the right side motors. This may be wrong for your setup.
         // If your robot moves backwards when commanded to go forwards,
         // reverse the left side instead.
         // See the note about this earlier on this page.
         frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        pitchRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        pitchRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        pitchLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        boolean up = true;
         double pitchTarget = 0;
         waitForStart();
         if (isStopRequested()) return;
@@ -47,33 +54,64 @@ public class TestTeleop extends LinearOpMode {
             double frontRightPower = (y - x - rx) / denominator;
             double backRightPower = (y + x - rx) / denominator;
             double pitchPosition = pitchRight.getCurrentPosition();
-            double kP = 0;
+            double kP = 0.001;
+            
             //gravity feedforward?
-            double angleFromTicks = ((-360 * pitchPosition)/751.8);
-            double kG = 0.5;
-            double G = kG * Math.cos(Math.toRadians(angleFromTicks + 130));
+            double angleFromTicks = ((-360 * pitchPosition)/3895.9);
+            double kG = 0.18;
+            double G = kG * Math.cos(Math.toRadians(angleFromTicks + 110));
+            
             if (gamepad2.dpad_up){
-                pitchTarget = 40;
+                pitchTarget = 50;
+                wrist.setPosition(0.1);
+               up = true;
             }
             if (gamepad2.dpad_down){
-                pitchTarget = 160;
+                pitchTarget = 1225;
+                wrist.setPosition(0.755);
+                up = false;
             }
-            double pitchPower = (kP * (pitchTarget - pitchPosition)) + G;
+            double pitchPower = (-1* kP * (pitchTarget - pitchPosition)) + G;
             pitchLeft.setPower(pitchPower);
             pitchRight.setPower(pitchPower);
-            wrist.setPosition(0.4);
-            leftClaw.setPosition(0.1);
-            if (gamepad2.left_bumper){
-                leftClaw.setPosition(0.3);
-                sleep(200);
+            
+            if (gamepad2.left_bumper || (gamepad2.right_trigger > 0.2)){
+                leftClaw.setPosition(0.55);
+            } else {
+                leftClaw.setPosition(0.25);
             }
+            
+            if (gamepad2.right_bumper || (gamepad2.right_trigger > 0.2)){
+                rightClaw.setPosition(0.35);
+            } else {
+                rightClaw.setPosition(0.65);
+            }
+            
             frontLeftMotor.setPower(frontLeftPower);
             backLeftMotor.setPower(backLeftPower);
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
-            extension.setPower(gamepad2.left_stick_y-0.2);
+           
+           if (up){
+            
+            if (gamepad2.left_stick_y > 0){
+                    extension.setPower(0.6*gamepad2.left_stick_y);
+                } else {
+                    extension.setPower(gamepad2.left_stick_y - 0.25);
+                }
+            
+            } else if (!up) {
+            
+            if (gamepad2.left_stick_y == 0) {
+                extension.setPower(0.1);
+            } else{
+                extension.setPower(gamepad2.left_stick_y);
+            }
+            }
+            
             telemetry.addData("target", pitchTarget);
             telemetry.addData("currentPos",pitchRight.getCurrentPosition());
+            
             telemetry.update();
             }
     }
